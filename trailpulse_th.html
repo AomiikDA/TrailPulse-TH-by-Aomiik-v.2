@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrailPulse TH — แดชบอร์ดติดตามการแข่งขันวิ่งเทรล & อันดับโลก</title>
+
+  <!-- Google Fonts: Prompt (Thai) & Inter (Numbers/Latin) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Prompt', 'Inter', 'sans-serif'],
+            num: ['Inter', 'Prompt', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#090d16',
+            slateDeep: '#0f172a',
+            cardDark: '#141e33',
+            trailOrange: '#f97316',
+            trailEmerald: '#10b981',
+            trailSky: '#38bdf8',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <style>
+    /* Custom scrollbar & subtle sport-tech accents */
+    body {
+      background-color: #090d16;
+      color: #f1f5f9;
+      font-family: 'Prompt', 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+    .font-num {
+      font-family: 'Inter', 'Prompt', sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    .glass-card {
+      background: linear-gradient(145deg, rgba(22, 32, 53, 0.92), rgba(15, 23, 42, 0.96));
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.55);
+    }
+    .glass-card:hover {
+      border-color: rgba(249, 115, 22, 0.35);
+    }
+    .topo-bg {
+      background-image: radial-gradient(rgba(249, 115, 22, 0.08) 1px, transparent 1px),
+        radial-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+      background-position: 0 0, 14px 14px;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #f97316;
+    }
+    .tab-active {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #ffffff;
+      box-shadow: 0 6px 18px -4px rgba(249, 115, 22, 0.55);
+    }
+    .calendar-day {
+      transition: all 0.2s ease;
+    }
+    .calendar-day.has-race {
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.25), rgba(234, 88, 12, 0.12));
+      border-color: rgba(249, 115, 22, 0.7);
+      cursor: pointer;
+    }
+    .calendar-day.has-race:hover {
+      transform: translateY(-2px);
+      background: linear-gradient(135deg, rgba(249, 115, 22, 0.42), rgba(234, 88, 12, 0.22));
+    }
+  </style>
+</head>
+<body class="topo-bg min-h-screen flex flex-col selection:bg-orange-500/30 selection:text-orange-200">
+
+  <!-- ==================== TOP HEADER & NAVIGATION ==================== -->
+  <header class="sticky top-0 z-40 backdrop-blur-xl bg-obsidian/85 border-b border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16 sm:h-20 gap-3">
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center shadow-lg shadow-orange-500/25 shrink-0">
+            <i class="fa-solid fa-mountain-sun text-white text-lg sm:text-xl"></i>
+          </div>
+          <div class="truncate">
+            <h1 class="text-base sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+              TrailPulse <span class="text-orange-400">TH</span>
+              <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                UTMB & ITRA Sync
+              </span>
+            </h1>
+            <p class="text-[11px] sm:text-xs text-slate-400 truncate">แดชบอร์ดสถิติวิ่งเทรล อันดับโลก & คะแนนสะสม</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <nav class="hidden lg:flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800">
+          <button onclick="switchTab('overview')" id="nav-overview" class="nav-btn tab-active px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2">
+            <i class="fa-solid fa-chart-line"></i> ภาพรวม & กราฟ
+          </button>
+          <button onclick="switchTab('rankings')" id="nav-rankings" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-earth-americas"></i> อันดับโลก
+          </button>
+          <button onclick="switchTab('goals')" id="nav-goals" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-gem"></i> เป้าหมาย Index & Stones
+          </button>
+          <button onclick="switchTab('races')" id="nav-races" class="nav-btn px-4 py-2 rounded-xl text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/80 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-list-check"></i> ประวัติการแข่งขัน
+          </button>
+        </nav>
+
+        <!-- Primary Action Button -->
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="openRaceModal()" class="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white text-xs sm:text-sm font-semibold px-3.5 sm:px-4 py-2.5 rounded-xl shadow-lg shadow-orange-500/25 transition-all active:scale-95 flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i>
+            <span class="hidden sm:inline">เพิ่มรายการแข่งขัน</span>
+            <span class="sm:hidden">เพิ่มสนาม</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile / Tablet Navigation Tabs -->
+      <div class="flex lg:hidden items-center gap-1.5 pb-3 overflow-x-auto no-scrollbar">
+        <button onclick="switchTab('overview')" id="mnav-overview" class="mnav-btn tab-active shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-chart-line"></i> ภาพรวม
+        </button>
+        <button onclick="switchTab('rankings')" id="mnav-rankings" class="mnav-btn shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-900/90 text-slate-300 border border-slate-800 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-earth-americas"></i> อันดับโลก
+        </button>
+        <button onclick="switchTab('goals')" id="mnav-goals" class="mnav-btn shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-900/90 text-slate-300 border border-slate-800 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-gem"></i> Index & Stones
+        </button>
+        <button onclick="switchTab('races')" id="mnav-races" class="mnav-btn shrink-0 px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-900/90 text-slate-300 border border-slate-800 transition-all flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check"></i> ประวัติสนาม
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+    <!-- ==================== TAB 1: OVERVIEW & ANALYTICS ==================== -->
+    <section id="tab-overview" class="tab-panel space-y-6">
+      <!-- Top Filter Bar for KPI Cards -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-card p-4 rounded-2xl">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-bolt text-orange-400"></i> สรุปสถิติการวิ่งเทรลของคุณ
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5" id="kpi-period-subtitle">แสดงสถิติสะสมทั้งหมดทุกรายการ</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Period Filter Buttons -->
+          <div class="inline-flex bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs">
+            <button onclick="setKpiFilter('all')" id="kpi-btn-all" class="kpi-filter-btn px-3 py-1.5 rounded-lg font-medium bg-orange-500 text-white transition-all">ทั้งหมด</button>
+            <button onclick="setKpiFilter('year')" id="kpi-btn-year" class="kpi-filter-btn px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all">รายปี</button>
+            <button onclick="setKpiFilter('month')" id="kpi-btn-month" class="kpi-filter-btn px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all">รายเดือน</button>
+            <button onclick="setKpiFilter('day')" id="kpi-btn-day" class="kpi-filter-btn px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all">รายวัน</button>
+          </div>
+          <!-- Dynamic Sub-filter (Year / Month / Date) -->
+          <select id="kpi-year-select" onchange="renderOverview()" class="hidden bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-orange-500"></select>
+          <input type="month" id="kpi-month-select" onchange="renderOverview()" class="hidden bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-orange-500" />
+          <input type="date" id="kpi-day-select" onchange="renderOverview()" class="hidden bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-orange-500" />
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards Grid (5 Cards) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Card 1: Total Races -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-400">สนามที่เข้าร่วม</span>
+            <div class="w-9 h-9 rounded-xl bg-orange-500/15 text-orange-400 flex items-center justify-center">
+              <i class="fa-solid fa-flag-checkered"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-total-races" class="text-3xl font-extrabold font-num text-white">0</span>
+            <span class="text-xs text-slate-400">สนาม</span>
+          </div>
+          <p id="kpi-races-meta" class="text-[11px] text-emerald-400 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-trophy"></i> <span>UTMB Series: 0 สนาม</span>
+          </p>
+        </div>
+
+        <!-- Card 2: Total Distance & Elevation -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-400">ระยะทาง & ความชัน</span>
+            <div class="w-9 h-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
+              <i class="fa-solid fa-route"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-1.5">
+            <span id="kpi-total-distance" class="text-2xl sm:text-3xl font-extrabold font-num text-white">0</span>
+            <span class="text-xs text-slate-400">km</span>
+          </div>
+          <p class="text-xs text-sky-400 font-num font-medium mt-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-mountain"></i>
+            <span>D+ <span id="kpi-total-elevation">0</span> m</span>
+          </p>
+        </div>
+
+        <!-- Card 3: UTMB Index -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-400">UTMB Index ปัจจุบัน</span>
+            <div class="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <i class="fa-solid fa-gauge-high"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-utmb-index" class="text-3xl font-extrabold font-num text-amber-400">0</span>
+            <span class="text-[11px] text-slate-400">pts</span>
+          </div>
+          <div id="kpi-utmb-categories" class="grid grid-cols-4 gap-1 mt-2.5 text-[10px] font-num">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Card 4: Running Stones -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-400">Running Stones</span>
+            <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+              <i class="fa-solid fa-gem"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-running-stones" class="text-3xl font-extrabold font-num text-emerald-400">0</span>
+            <span class="text-xs text-slate-400">ก้อน</span>
+          </div>
+          <p id="kpi-lottery-status" class="text-[11px] text-emerald-300 mt-2 flex items-center gap-1 truncate">
+            <i class="fa-solid fa-circle-check"></i> พร้อมจับฉลาก UTMB
+          </p>
+        </div>
+
+        <!-- Card 5: ITRA Performance Index -->
+        <div class="glass-card rounded-2xl p-5 relative overflow-hidden sm:col-span-2 lg:col-span-1">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-medium text-slate-400">ITRA Index</span>
+            <div class="w-9 h-9 rounded-xl bg-violet-500/15 text-violet-400 flex items-center justify-center">
+              <i class="fa-solid fa-award"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span id="kpi-itra-index" class="text-3xl font-extrabold font-num text-violet-400">0</span>
+            <span class="text-[11px] text-slate-400">pts</span>
+          </div>
+          <p id="kpi-itra-tier" class="text-[11px] text-slate-300 mt-2 flex items-center gap-1">
+            <i class="fa-solid fa-medal text-violet-400"></i> <span>ระดับนักวิ่งเทรล</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Daily / Monthly / Yearly Analytics Section -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6 space-y-5">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-chart-column text-sky-400"></i> วิเคราะห์การเข้าร่วมแข่งขัน (รายปี / รายเดือน / รายวัน)
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">ติดตามจำนวนสนาม ระยะทาง (km) และความชันสะสม (D+ m) ตามช่วงเวลา</p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- View Mode Switcher -->
+            <div class="inline-flex bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+              <button onclick="setAnalyticsMode('yearly')" id="ana-btn-yearly" class="ana-mode-btn px-3 py-1.5 rounded-lg font-medium bg-sky-500 text-slate-950 transition-all">รายปี</button>
+              <button onclick="setAnalyticsMode('monthly')" id="ana-btn-monthly" class="ana-mode-btn px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all">รายเดือน</button>
+              <button onclick="setAnalyticsMode('daily')" id="ana-btn-daily" class="ana-mode-btn px-3 py-1.5 rounded-lg font-medium text-slate-400 hover:text-white transition-all">รายวัน / ปฏิทิน</button>
+            </div>
+
+            <!-- Year selector for Monthly mode -->
+            <select id="ana-year-select" onchange="renderAnalytics()" class="hidden bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400"></select>
+
+            <!-- Month selector for Daily Calendar mode -->
+            <input type="month" id="ana-month-select" onchange="renderAnalytics()" class="hidden bg-slate-900 border border-slate-700 text-slate-200 text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:border-sky-400" />
+          </div>
+        </div>
+
+        <!-- Chart View (Yearly / Monthly) -->
+        <div id="analytics-chart-wrapper" class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span id="main-chart-title" class="text-xs sm:text-sm font-semibold text-slate-200">ระยะทาง (km) และจำนวนสนามรายปี</span>
+              <span class="text-[11px] text-slate-400">อัปเดตอัตโนมัติ</span>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full">
+              <canvas id="activityMainChart"></canvas>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <span id="elev-chart-title" class="text-xs sm:text-sm font-semibold text-slate-200">ความชันสะสม (D+ เมตร)</span>
+              <i class="fa-solid fa-mountain text-emerald-400 text-sm"></i>
+            </div>
+            <div class="relative h-64 sm:h-72 w-full">
+              <canvas id="elevationChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Calendar View (Hidden unless 'daily' mode is selected) -->
+        <div id="analytics-calendar-wrapper" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-4">
+              <button onclick="shiftCalendarMonth(-1)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors">
+                <i class="fa-solid fa-chevron-left text-xs"></i>
+              </button>
+              <h4 id="calendar-month-label" class="text-sm sm:text-base font-bold text-white">พฤศจิกายน 2026</h4>
+              <button onclick="shiftCalendarMonth(1)" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors">
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+              </button>
+            </div>
+
+            <!-- Day Headers -->
+            <div class="grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold text-slate-400 mb-2">
+              <div class="text-rose-400">อา</div>
+              <div>จ</div>
+              <div>อ</div>
+              <div>พ</div>
+              <div>พฤ</div>
+              <div>ศ</div>
+              <div class="text-sky-400">ส</div>
+            </div>
+            <!-- Calendar Days Grid -->
+            <div id="calendar-grid" class="grid grid-cols-7 gap-1.5"></div>
+            <div class="flex items-center gap-4 mt-4 text-[11px] text-slate-400">
+              <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-orange-500/40 border border-orange-500"></span> วันที่มีรายการแข่งขัน (กดดูรายละเอียดได้)</span>
+            </div>
+          </div>
+
+          <!-- Selected Day Race Details Panel -->
+          <div class="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 flex flex-col">
+            <h4 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+              <i class="fa-solid fa-calendar-day text-orange-400"></i> รายละเอียดการแข่งขันรายวัน
+            </h4>
+            <div id="calendar-day-detail" class="flex-1 flex flex-col justify-center text-sm text-slate-400">
+              <p class="text-center py-6">คลิกที่วันที่มีไฮไลต์สีส้มบนปฏิทิน เพื่อดูข้อมูลสนามแข่งในวันนั้น</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Races Quick Preview -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-orange-400"></i> รายการแข่งขันล่าสุด
+          </h3>
+          <button onclick="switchTab('races')" class="text-xs text-orange-400 hover:text-orange-300 font-medium flex items-center gap-1">
+            ดูทั้งหมด <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+        <div id="recent-races-list" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: GLOBAL RANKINGS ==================== -->
+    <section id="tab-rankings" class="tab-panel hidden space-y-6">
+      <!-- Header Banner -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 mb-1">
+            <span id="rank-tier-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+              Competitive Trail Runner
+            </span>
+            <span id="rank-percentile-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+              Top 14.5% ทั่วโลก
+            </span>
+          </div>
+          <h2 class="text-xl font-bold text-white">อันดับนักวิ่งเทรลทั่วโลก (Global Rankings)</h2>
+          <p class="text-xs text-slate-400 mt-0.5">
+            กลุ่มอายุ: <span id="rank-agegroup-label" class="text-slate-200 font-medium">M 35-39</span> • ประเทศ: <span class="text-slate-200 font-medium">Thailand (THA)</span>
+          </p>
+        </div>
+        <button onclick="openRankingModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 self-start sm:self-auto">
+          <i class="fa-solid fa-pen-to-square text-sky-400"></i> แก้ไขข้อมูลอันดับโลก
+        </button>
+      </div>
+
+      <!-- 4 Main Ranking Cards (Global / Asia / Thailand / Age Group) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card rounded-2xl p-5 border-t-2 border-t-sky-400">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+            <span>อันดับโลก (Global Rank)</span>
+            <i class="fa-solid fa-globe text-sky-400 text-base"></i>
+          </div>
+          <div class="text-3xl font-extrabold font-num text-white" id="disp-global-rank">#18,420</div>
+          <div class="text-xs text-slate-400 mt-1.5 font-num">จากนักวิ่ง <span id="disp-global-total">145,000</span> คนทั่วโลก</div>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="bar-global-pct" class="bg-sky-400 h-1.5 rounded-full" style="width: 87%"></div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border-t-2 border-t-orange-400">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+            <span>อันดับเอเชีย (Asia Rank)</span>
+            <i class="fa-solid fa-earth-asia text-orange-400 text-base"></i>
+          </div>
+          <div class="text-3xl font-extrabold font-num text-white" id="disp-asia-rank">#1,850</div>
+          <div class="text-xs text-slate-400 mt-1.5 font-num">จากนักวิ่ง <span id="disp-asia-total">24,000</span> คนในเอเชีย</div>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="bar-asia-pct" class="bg-orange-400 h-1.5 rounded-full" style="width: 92%"></div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border-t-2 border-t-emerald-400">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+            <span>อันดับประเทศไทย (TH Rank)</span>
+            <i class="fa-solid fa-flag text-emerald-400 text-base"></i>
+          </div>
+          <div class="text-3xl font-extrabold font-num text-white" id="disp-th-rank">#142</div>
+          <div class="text-xs text-slate-400 mt-1.5 font-num">จากนักวิ่ง <span id="disp-th-total">4,200</span> คนในไทย</div>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div id="bar-th-pct" class="bg-emerald-400 h-1.5 rounded-full" style="width: 96%"></div>
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border-t-2 border-t-violet-400">
+          <div class="flex items-center justify-between text-xs text-slate-400 mb-2">
+            <span>อันดับกลุ่มอายุ (Age Group)</span>
+            <i class="fa-solid fa-users text-violet-400 text-base"></i>
+          </div>
+          <div class="text-3xl font-extrabold font-num text-white" id="disp-ag-rank">#28</div>
+          <div class="text-xs text-slate-400 mt-1.5">รุ่น <span id="disp-ag-name" class="text-violet-300 font-medium">M 35-39</span> (ประเทศไทย)</div>
+          <div class="mt-3 w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+            <div class="bg-violet-400 h-1.5 rounded-full" style="width: 90%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ranking Systems Breakdown (UTMB / ITRA / National) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- UTMB World Series Ranking -->
+        <div class="glass-card rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center font-bold text-sm">UTMB</div>
+              <div>
+                <h4 class="text-sm font-bold text-white">UTMB World Series Index</h4>
+                <p class="text-[11px] text-slate-400">ระบบจัดอันดับสากล UTMB</p>
+              </div>
+            </div>
+            <span id="sys-utmb-score" class="text-xl font-extrabold font-num text-amber-400">0</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs">
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">อันดับโลก UTMB</span>
+              <span id="sys-utmb-rank" class="font-num font-bold text-white text-sm">#18,420</span>
+            </div>
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">ระยะที่คะแนนสูงสุด</span>
+              <span id="sys-utmb-bestcat" class="font-num font-bold text-emerald-400 text-sm">50K</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ITRA World Ranking -->
+        <div class="glass-card rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-violet-500/15 text-violet-400 flex items-center justify-center font-bold text-sm">ITRA</div>
+              <div>
+                <h4 class="text-sm font-bold text-white">ITRA World Ranking</h4>
+                <p class="text-[11px] text-slate-400">International Trail Running Assoc.</p>
+              </div>
+            </div>
+            <span id="sys-itra-score" class="text-xl font-extrabold font-num text-violet-400">0</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs">
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">อันดับโลก ITRA</span>
+              <span id="sys-itra-rank" class="font-num font-bold text-white text-sm">#19,150</span>
+            </div>
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">ITRA Performance Tier</span>
+              <span id="sys-itra-tier" class="font-bold text-violet-300 text-sm">ระดับดีมาก</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- National Trail Ranking -->
+        <div class="glass-card rounded-2xl p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold text-sm">THA</div>
+              <div>
+                <h4 class="text-sm font-bold text-white">National Trail Ranking</h4>
+                <p class="text-[11px] text-slate-400">อันดับนักวิ่งเทรลประเทศไทย</p>
+              </div>
+            </div>
+            <span id="sys-th-rank" class="text-xl font-extrabold font-num text-emerald-400">#142</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-xs">
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">เปอร์เซ็นไทล์ในไทย</span>
+              <span id="sys-th-pct" class="font-num font-bold text-emerald-400 text-sm">Top 3.4%</span>
+            </div>
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">อันดับกลุ่มอายุ</span>
+              <span id="sys-th-ag" class="font-num font-bold text-white text-sm">#28</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Index Progression Chart -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-arrow-trend-up text-emerald-400"></i> กราฟพัฒนาการคะแนน UTMB Index & ITRA Index
+            </h3>
+            <p class="text-xs text-slate-400">เปรียบเทียบแนวโน้มคะแนนจากทุกสนามที่คุณเข้าร่วมตามลำดับเวลา</p>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1.5 text-amber-400"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> UTMB Index</span>
+            <span class="flex items-center gap-1.5 text-violet-400"><span class="w-2.5 h-2.5 rounded-full bg-violet-400"></span> ITRA Index</span>
+          </div>
+        </div>
+        <div class="relative h-72 w-full">
+          <canvas id="indexProgressionChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: INDEX & RUNNING STONES GOALS ==================== -->
+    <section id="tab-goals" class="tab-panel hidden space-y-6">
+      <!-- Top Header -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-gem text-emerald-400"></i> เป้าหมายสะสม UTMB Index & Running Stones
+          </h2>
+          <p class="text-xs text-slate-400 mt-0.5">ติดตามความพร้อมสู่สนาม UTMB Mont-Blanc Finals (OCC / CCC / UTMB)</p>
+        </div>
+        <button onclick="openGoalsModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 self-start sm:self-auto">
+          <i class="fa-solid fa-bullseye text-orange-400"></i> ตั้งค่าเป้าหมายส่วนตัว
+        </button>
+      </div>
+
+      <!-- Progress Cards Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <!-- Running Stones Goal Card -->
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-gem text-emerald-400"></i> เป้าหมาย Running Stones
+            </h3>
+            <span id="goal-stones-ratio" class="text-sm font-extrabold font-num text-emerald-400">0 / 12</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+            <div id="goal-stones-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div id="stones-visual-grid" class="flex flex-wrap gap-1.5 pt-1">
+            <!-- Visual stone icons generated dynamically -->
+          </div>
+          <p id="goal-stones-hint" class="text-xs text-slate-400">
+            ยิ่งสะสม Running Stones มาก ยิ่งเพิ่มโอกาสในการจับฉลาก UTMB Mont-Blanc (1 Stone = 1 สิทธิ์)
+          </p>
+        </div>
+
+        <!-- UTMB Index Goal Card -->
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-gauge-high text-amber-400"></i> เป้าหมาย UTMB Index
+            </h3>
+            <span id="goal-utmb-ratio" class="text-sm font-extrabold font-num text-amber-400">0 / 600</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+            <div id="goal-utmb-bar" class="bg-gradient-to-r from-orange-500 to-amber-400 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">คะแนนปัจจุบัน</span>
+              <span id="goal-utmb-current" class="font-num font-bold text-white text-base">0</span>
+            </div>
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">ต้องเพิ่มอีก</span>
+              <span id="goal-utmb-diff" class="font-num font-bold text-orange-400 text-base">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ITRA Index Goal Card -->
+        <div class="glass-card rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-award text-violet-400"></i> เป้าหมาย ITRA Index
+            </h3>
+            <span id="goal-itra-ratio" class="text-sm font-extrabold font-num text-violet-400">0 / 600</span>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+            <div id="goal-itra-bar" class="bg-gradient-to-r from-violet-500 to-fuchsia-400 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">คะแนนปัจจุบัน</span>
+              <span id="goal-itra-current" class="font-num font-bold text-white text-base">0</span>
+            </div>
+            <div class="bg-slate-900/70 p-2.5 rounded-xl">
+              <span class="text-slate-400 block text-[11px]">ต้องเพิ่มอีก</span>
+              <span id="goal-itra-diff" class="font-num font-bold text-violet-400 text-base">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UTMB Mont-Blanc Qualification Checklist -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6">
+        <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+          <i class="fa-solid fa-clipboard-check text-sky-400"></i> สถานะความพร้อมจับฉลาก UTMB Mont-Blanc (Qualification Checklist)
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">ตรวจสอบเงื่อนไข: ต้องมี Valid UTMB Index ในระยะที่กำหนด (ภายใน 24 เดือน) และมี Running Stones อย่างน้อย 1 ก้อน</p>
+
+        <div id="qualification-checklist" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- OCC, CCC, UTMB cards populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Reference Table: Running Stones Matrix -->
+      <div class="glass-card rounded-2xl p-5 sm:p-6">
+        <h3 class="text-base font-bold text-white mb-1 flex items-center gap-2">
+          <i class="fa-solid fa-table text-orange-400"></i> ตารางอ้างอิงเกณฑ์การเก็บ Running Stones
+        </h3>
+        <p class="text-xs text-slate-400 mb-4">เปรียบเทียบจำนวน Running Stones ที่ได้รับเมื่อจบการแข่งขัน (Finisher) ในสนาม UTMB World Series Events และ Majors</p>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400">
+                <th class="py-3 px-4 font-semibold">ประเภทระยะ (UTMB Category)</th>
+                <th class="py-3 px-4 font-semibold">ระยะทางเทียบเท่า (km-effort)</th>
+                <th class="py-3 px-4 font-semibold text-center">UTMB World Series Event</th>
+                <th class="py-3 px-4 font-semibold text-center text-amber-400">UTMB World Series Major (x2)</th>
+                <th class="py-3 px-4 font-semibold">ใช้สิทธิ์จับฉลาก Finals</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/70">
+              <tr class="hover:bg-slate-800/30">
+                <td class="py-3 px-4 font-bold text-sky-400 font-num">20K</td>
+                <td class="py-3 px-4 text-slate-300">20 – 34 km-effort</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-emerald-400"><i class="fa-solid fa-gem mr-1"></i>1 Stone</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-amber-400"><i class="fa-solid fa-gem mr-1"></i>2 Stones</td>
+                <td class="py-3 px-4 text-slate-300">OCC</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="py-3 px-4 font-bold text-emerald-400 font-num">50K</td>
+                <td class="py-3 px-4 text-slate-300">35 – 64 km-effort</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-emerald-400"><i class="fa-solid fa-gem mr-1"></i>2 Stones</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-amber-400"><i class="fa-solid fa-gem mr-1"></i>4 Stones</td>
+                <td class="py-3 px-4 text-slate-300">OCC, CCC</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="py-3 px-4 font-bold text-orange-400 font-num">100K</td>
+                <td class="py-3 px-4 text-slate-300">65 – 114 km-effort</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-emerald-400"><i class="fa-solid fa-gem mr-1"></i>3 Stones</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-amber-400"><i class="fa-solid fa-gem mr-1"></i>6 Stones</td>
+                <td class="py-3 px-4 text-slate-300">OCC, CCC, UTMB</td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="py-3 px-4 font-bold text-rose-400 font-num">100M</td>
+                <td class="py-3 px-4 text-slate-300">115+ km-effort</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-emerald-400"><i class="fa-solid fa-gem mr-1"></i>4 Stones</td>
+                <td class="py-3 px-4 text-center font-num font-bold text-amber-400"><i class="fa-solid fa-gem mr-1"></i>8 Stones</td>
+                <td class="py-3 px-4 text-slate-300">OCC, CCC, UTMB</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: RACE LOG & CRUD ==================== -->
+    <section id="tab-races" class="tab-panel hidden space-y-5">
+      <!-- Controls & Filters -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+          <!-- Search Box -->
+          <div class="relative flex-1 max-w-md">
+            <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="race-search" oninput="renderRaceLog()" placeholder="ค้นหาชื่อรายการ, สถานที่, ประเทศ..." class="w-full bg-slate-900 border border-slate-700/80 text-white text-xs sm:text-sm rounded-xl pl-9 pr-4 py-2.5 focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <!-- Year Filter -->
+          <select id="race-filter-year" onchange="renderRaceLog()" class="bg-slate-900 border border-slate-700/80 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-orange-500">
+            <option value="all">ทุกปี</option>
+          </select>
+
+          <!-- Category Filter -->
+          <select id="race-filter-cat" onchange="renderRaceLog()" class="bg-slate-900 border border-slate-700/80 text-slate-200 text-xs sm:text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:border-orange-500">
+            <option value="all">ทุกระยะ</option>
+            <option value="20K">20K</option>
+            <option value="50K">50K</option>
+            <option value="100K">100K</option>
+            <option value="100M">100M</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="askResetSampleData()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-medium px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate-left"></i> รีเซ็ตข้อมูลตัวอย่าง
+          </button>
+          <button onclick="openRaceModal()" class="bg-orange-500 hover:bg-orange-400 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> เพิ่มสนาม
+          </button>
+        </div>
+      </div>
+
+      <!-- Race List Table / Cards -->
+      <div class="glass-card rounded-2xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-900/90 border-b border-slate-800 text-slate-400">
+                <th class="py-3.5 px-4 font-semibold">วันที่ / รายการแข่งขัน</th>
+                <th class="py-3.5 px-4 font-semibold">ประเภทสนาม</th>
+                <th class="py-3.5 px-4 font-semibold text-right">ระยะ / ความชัน</th>
+                <th class="py-3.5 px-4 font-semibold text-center">เวลา / อันดับ</th>
+                <th class="py-3.5 px-4 font-semibold text-center">UTMB / ITRA</th>
+                <th class="py-3.5 px-4 font-semibold text-center">Stones</th>
+                <th class="py-3.5 px-4 font-semibold text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="race-log-tbody" class="divide-y divide-slate-800/70">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+        <div id="race-log-empty" class="hidden py-12 text-center text-slate-400">
+          <i class="fa-solid fa-mountain text-3xl text-slate-600 mb-3"></i>
+          <p class="text-sm">ไม่พบรายการแข่งขันที่ตรงกับเงื่อนไขการค้นหา</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="border-t border-slate-800/80 py-5 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <span>TrailPulse TH — บันทึกข้อมูลอัตโนมัติลงในเบราว์เซอร์ (localStorage)</span>
+      <span class="font-num">Built for Trail Runners • UTMB & ITRA Analytics</span>
+    </div>
+  </footer>
+
+  <!-- ==================== MODAL 1: ADD / EDIT RACE ==================== -->
+  <div id="race-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
+    <div class="glass-card w-full max-w-2xl rounded-2xl border border-slate-700 overflow-hidden my-auto">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
+        <h3 id="race-modal-title" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-orange-400"></i> เพิ่มรายการแข่งขันวิ่งเทรล
+        </h3>
+        <button onclick="closeModal('race-modal')" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="race-form" onsubmit="saveRace(event)" class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        <input type="hidden" id="race-id" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-medium text-slate-300 mb-1">ชื่อรายการแข่งขัน *</label>
+            <input type="text" id="f-name" required placeholder="เช่น Chiang Mai Thailand by UTMB (Hmong 50)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">วันที่แข่งขัน *</label>
+            <input type="date" id="f-date" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">สถานที่ / ประเทศ *</label>
+            <input type="text" id="f-location" required placeholder="เช่น เชียงใหม่, ประเทศไทย" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">ประเภทระยะ (Category) *</label>
+            <select id="f-category" onchange="autoSuggestStones()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500">
+              <option value="20K">20K</option>
+              <option value="50K" selected>50K</option>
+              <option value="100K">100K</option>
+              <option value="100M">100M</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">ประเภทสนาม (Series) *</label>
+            <select id="f-type" onchange="autoSuggestStones()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-orange-500">
+              <option value="UTMB World Series">UTMB World Series</option>
+              <option value="UTMB Major">UTMB Major (Stones x2)</option>
+              <option value="ITRA">ITRA Certified</option>
+              <option value="Local">Local / National Trail</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">ระยะทาง (km) *</label>
+            <input type="number" step="0.1" min="1" id="f-distance" required placeholder="50.0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">ความชันสะสม D+ (เมตร) *</label>
+            <input type="number" min="0" id="f-elevation" required placeholder="2450" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">เวลาที่ทำได้ (HH:MM:SS) *</label>
+            <input type="text" id="f-time" required placeholder="07:45:20" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">อันดับ Overall</label>
+            <input type="text" id="f-rank" placeholder="เช่น 42 / 650" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">คะแนน UTMB Index ที่ได้</label>
+            <input type="number" min="0" max="1000" id="f-utmb" placeholder="560" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">คะแนน ITRA ที่ได้</label>
+            <input type="number" min="0" max="1000" id="f-itra" placeholder="555" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white focus:outline-none focus:border-orange-500" />
+          </div>
+
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-medium text-slate-300 mb-1">
+              จำนวน Running Stones ที่ได้รับ
+              <span class="text-[11px] text-emerald-400 font-normal ml-1">(คำนวณแนะนำอัตโนมัติตามประเภทสนาม)</span>
+            </label>
+            <input type="number" min="0" max="10" id="f-stones" value="2" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-emerald-400 font-bold focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal('race-modal')" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-medium bg-slate-800 hover:bg-slate-700 text-slate-300">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white shadow-lg shadow-orange-500/20">
+            <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกรายการ
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: EDIT GLOBAL RANKINGS ==================== -->
+  <div id="ranking-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="glass-card w-full max-w-lg rounded-2xl border border-slate-700 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-earth-americas text-sky-400"></i> อัปเดตข้อมูลอันดับโลกส่วนตัว
+        </h3>
+        <button onclick="closeModal('ranking-modal')" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form onsubmit="saveRankingProfile(event)" class="p-5 space-y-4">
+        <div class="grid grid-cols-2 gap-3.5">
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">อันดับโลก (UTMB Global)</label>
+            <input type="number" min="1" id="r-global" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-num text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">จำนวนนักวิ่งทั่วโลกทั้งหมด</label>
+            <input type="number" min="1" id="r-global-total" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-num text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">อันดับเอเชีย (Asia Rank)</label>
+            <input type="number" min="1" id="r-asia" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-num text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">อันดับโลก ITRA</label>
+            <input type="number" min="1" id="r-itra-global" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-num text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">อันดับประเทศไทย (TH Rank)</label>
+            <input type="number" min="1" id="r-th" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-num text-white" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-300 mb-1">อันดับกลุ่มอายุ (Age Group)</label>
+            <input type="number" min="1" id="r-ag" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm font-num text-white" />
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs text-slate-300 mb-1">ชื่อกลุ่มอายุ (เช่น M 35-39, F 30-34)</label>
+            <input type="text" id="r-ag-name" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal('ranking-modal')" class="px-4 py-2 rounded-xl text-xs bg-slate-800 text-slate-300">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold bg-sky-500 hover:bg-sky-400 text-slate-950">บันทึกอันดับ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: EDIT GOALS ==================== -->
+  <div id="goals-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="glass-card w-full max-w-md rounded-2xl border border-slate-700 overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-900/80">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-bullseye text-orange-400"></i> ตั้งค่าเป้าหมายส่วนตัว
+        </h3>
+        <button onclick="closeModal('goals-modal')" class="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <form onsubmit="saveGoals(event)" class="p-5 space-y-4">
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">เป้าหมายจำนวน Running Stones (ก้อน)</label>
+          <input type="number" min="1" max="50" id="g-stones" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">เป้าหมายคะแนน UTMB Index</label>
+          <input type="number" min="200" max="1000" id="g-utmb" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white" />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 mb-1">เป้าหมายคะแนน ITRA Index</label>
+          <input type="number" min="200" max="1000" id="g-itra" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-num text-white" />
+        </div>
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal('goals-modal')" class="px-4 py-2 rounded-xl text-xs bg-slate-800 text-slate-300">ยกเลิก</button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold bg-orange-500 hover:bg-orange-400 text-white">บันทึกเป้าหมาย</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 4: CUSTOM CONFIRM DIALOG ==================== -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 backdrop-blur-sm p-4">
+    <div class="glass-card w-full max-w-sm rounded-2xl border border-slate-700 p-5 text-center space-y-4">
+      <div class="w-12 h-12 rounded-full bg-rose-500/15 text-rose-400 flex items-center justify-center mx-auto text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h3 id="confirm-title" class="text-base font-bold text-white">ยืนยันการดำเนินการ</h3>
+        <p id="confirm-message" class="text-xs text-slate-400 mt-1">คุณแน่ใจหรือไม่ว่าต้องการดำเนินการนี้?</p>
+      </div>
+      <div class="flex items-center justify-center gap-2.5 pt-2">
+        <button onclick="closeModal('confirm-modal')" class="px-4 py-2 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300">ยกเลิก</button>
+        <button id="confirm-ok-btn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-500 hover:bg-rose-400 text-white">ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden items-center gap-2.5 bg-slate-900 border border-emerald-500/50 text-white px-4 py-3 rounded-xl shadow-2xl text-xs sm:text-sm">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-msg">บันทึกข้อมูลเรียบร้อย</span>
+  </div>
+
+  <!-- ==================== APPLICATION SCRIPT ==================== -->
+  <script>
+    /*************************************************************************
+     * 1. INITIAL SAMPLE DATA & STATE MANAGEMENT (localStorage)
+     *************************************************************************/
+    const STORAGE_KEYS = {
+      RACES: 'trailpulse_th_races_v1',
+      RANKING: 'trailpulse_th_ranking_v1',
+      GOALS: 'trailpulse_th_goals_v1',
+    };
+
+    const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const THAI_MONTHS_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+    // Realistic Trail Running Sample Data (2024 - 2026)
+    const SAMPLE_RACES = [
+      {
+        id: 'race-1',
+        name: 'Chiang Mai Thailand by UTMB (Hmong 50)',
+        date: '2024-12-07',
+        location: 'เชียงใหม่, ประเทศไทย',
+        distance: 54.0,
+        elevation: 2850,
+        time: '08:12:40',
+        category: '50K',
+        type: 'UTMB Major',
+        utmbIndex: 542,
+        itraIndex: 538,
+        stones: 4,
+        rank: '118 / 1,240',
+      },
+      {
+        id: 'race-2',
+        name: 'Tanaosri Trail (TNT 30K)',
+        date: '2024-08-18',
+        location: 'ราชบุรี, ประเทศไทย',
+        distance: 32.5,
+        elevation: 1420,
+        time: '04:05:15',
+        category: '20K',
+        type: 'ITRA',
+        utmbIndex: 518,
+        itraIndex: 522,
+        stones: 0,
+        rank: '46 / 520',
+      },
+      {
+        id: 'race-3',
+        name: 'Pong Yaeng Trail (PYT 66)',
+        date: '2025-01-25',
+        location: 'แม่ริม เชียงใหม่, ประเทศไทย',
+        distance: 66.0,
+        elevation: 3600,
+        time: '10:34:10',
+        category: '50K',
+        type: 'ITRA',
+        utmbIndex: 556,
+        itraIndex: 550,
+        stones: 0,
+        rank: '34 / 380',
+      },
+      {
+        id: 'race-4',
+        name: 'Amazean Jungle Thailand by UTMB (Betong 50)',
+        date: '2025-05-03',
+        location: 'เบตง ยะลา, ประเทศไทย',
+        distance: 52.0,
+        elevation: 2680,
+        time: '07:58:22',
+        category: '50K',
+        type: 'UTMB World Series',
+        utmbIndex: 568,
+        itraIndex: 564,
+        stones: 2,
+        rank: '52 / 610',
+      },
+      {
+        id: 'race-5',
+        name: 'TransLantau by UTMB (TL 50)',
+        date: '2025-11-15',
+        location: 'เกาะลันเตา, ฮ่องกง',
+        distance: 51.2,
+        elevation: 2450,
+        time: '07:24:50',
+        category: '50K',
+        type: 'UTMB World Series',
+        utmbIndex: 584,
+        itraIndex: 579,
+        stones: 2,
+        rank: '74 / 890',
+      },
+      {
+        id: 'race-6',
+        name: 'Chiang Mai Thailand by UTMB (Elephant 100)',
+        date: '2025-12-06',
+        location: 'เชียงใหม่, ประเทศไทย',
+        distance: 98.5,
+        elevation: 4950,
+        time: '16:48:35',
+        category: '100K',
+        type: 'UTMB Major',
+        utmbIndex: 591,
+        itraIndex: 586,
+        stones: 6,
+        rank: '68 / 820',
+      },
+      {
+        id: 'race-7',
+        name: 'Ultra-Trail Nan (UTN 35)',
+        date: '2026-02-14',
+        location: 'น่าน, ประเทศไทย',
+        distance: 35.0,
+        elevation: 1890,
+        time: '04:32:18',
+        category: '20K',
+        type: 'Local',
+        utmbIndex: 576,
+        itraIndex: 572,
+        stones: 0,
+        rank: '19 / 410',
+      },
+      {
+        id: 'race-8',
+        name: 'Amazean Jungle Thailand by UTMB (Betong 100)',
+        date: '2026-05-02',
+        location: 'เบตง ยะลา, ประเทศไทย',
+        distance: 102.0,
+        elevation: 5200,
+        time: '17:52:10',
+        category: '100K',
+        type: 'UTMB World Series',
+        utmbIndex: 604,
+        itraIndex: 598,
+        stones: 3,
+        rank: '29 / 420',
+      },
+      {
+        id: 'race-9',
+        name: 'Khao Yai Trail Marathon (KYT 25)',
+        date: '2026-09-12',
+        location: 'นครราชสีมา, ประเทศไทย',
+        distance: 26.5,
+        elevation: 980,
+        time: '02:48:05',
+        category: '20K',
+        type: 'ITRA',
+        utmbIndex: 595,
+        itraIndex: 590,
+        stones: 0,
+        rank: '14 / 680',
+      },
+      {
+        id: 'race-10',
+        name: 'Doi Suthep Skyrun (DS 30)',
+        date: '2026-11-08',
+        location: 'เชียงใหม่, ประเทศไทย',
+        distance: 30.0,
+        elevation: 1750,
+        time: '03:54:40',
+        category: '20K',
+        type: 'Local',
+        utmbIndex: 612,
+        itraIndex: 605,
+        stones: 0,
+        rank: '11 / 350',
+      },
+    ];
+
+    const DEFAULT_RANKING = {
+      globalRank: 16420,
+      globalTotal: 152000,
+      asiaRank: 1480,
+      asiaTotal: 25500,
+      thRank: 118,
+      thTotal: 4500,
+      itraGlobalRank: 17150,
+      ageGroupRank: 22,
+      ageGroupName: 'M 35-39',
+    };
+
+    const DEFAULT_GOALS = {
+      stonesTarget: 18,
+      utmbTarget: 650,
+      itraTarget: 640,
+    };
+
+    // Global App State
+    let races = [];
+    let rankingProfile = {};
+    let goals = {};
+    let currentTab = 'overview';
+    let kpiFilter = 'all'; // 'all' | 'year' | 'month' | 'day'
+    let analyticsMode = 'yearly'; // 'yearly' | 'monthly' | 'daily'
+    let calendarMonthStr = '2026-11';
+
+    // Chart.js Instances
+    let activityMainChart = null;
+    let elevationChart = null;
+    let indexProgressionChart = null;
+
+    // Load Data Safely from localStorage
+    function loadState() {
+      try {
+        const storedRaces = localStorage.getItem(STORAGE_KEYS.RACES);
+        races = storedRaces ? JSON.parse(storedRaces) : JSON.parse(JSON.stringify(SAMPLE_RACES));
+
+        const storedRanking = localStorage.getItem(STORAGE_KEYS.RANKING);
+        rankingProfile = storedRanking ? JSON.parse(storedRanking) : { ...DEFAULT_RANKING };
+
+        const storedGoals = localStorage.getItem(STORAGE_KEYS.GOALS);
+        goals = storedGoals ? JSON.parse(storedGoals) : { ...DEFAULT_GOALS };
+      } catch (err) {
+        console.error('Error loading state:', err);
+        races = JSON.parse(JSON.stringify(SAMPLE_RACES));
+        rankingProfile = { ...DEFAULT_RANKING };
+        goals = { ...DEFAULT_GOALS };
+      }
+    }
+
+    function persistState() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.RACES, JSON.stringify(races));
+        localStorage.setItem(STORAGE_KEYS.RANKING, JSON.stringify(rankingProfile));
+        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(goals));
+      } catch (err) {
+        console.error('Error saving state:', err);
+      }
+    }
+
+    /*************************************************************************
+     * 2. CORE CALCULATIONS (UTMB INDEX, ITRA, STONES, QUALIFICATION)
+     *************************************************************************/
+    function getAvailableYears() {
+      const years = new Set(races.map(r => r.date.slice(0, 4)));
+      if (years.size === 0) years.add(String(new Date().getFullYear()));
+      return Array.from(years).sort((a, b) => b.localeCompare(a));
+    }
+
+    function calculateMetrics(raceList) {
+      const totalRaces = raceList.length;
+      const totalDistance = raceList.reduce((sum, r) => sum + Number(r.distance || 0), 0);
+      const totalElevation = raceList.reduce((sum, r) => sum + Number(r.elevation || 0), 0);
+      const totalStones = raceList.reduce((sum, r) => sum + Number(r.stones || 0), 0);
+      const utmbSeriesCount = raceList.filter(r => r.type === 'UTMB World Series' || r.type === 'UTMB Major').length;
+
+      // Calculate UTMB Index (average of top 5 recent scores or all available)
+      const validUtmb = raceList.filter(r => Number(r.utmbIndex) > 0).sort((a, b) => b.utmbIndex - a.utmbIndex);
+      const topUtmb = validUtmb.slice(0, 5);
+      const utmbIndex = topUtmb.length ? Math.round(topUtmb.reduce((s, r) => s + Number(r.utmbIndex), 0) / topUtmb.length) : 0;
+
+      // UTMB Index per category
+      const categories = ['20K', '50K', '100K', '100M'];
+      const utmbByCat = {};
+      categories.forEach(cat => {
+        const catRaces = raceList.filter(r => r.category === cat && Number(r.utmbIndex) > 0);
+        utmbByCat[cat] = catRaces.length
+          ? Math.round(catRaces.reduce((s, r) => s + Number(r.utmbIndex), 0) / catRaces.length)
+          : 0;
+      });
+
+      // ITRA Performance Index (average of top 5)
+      const validItra = raceList.filter(r => Number(r.itraIndex) > 0).sort((a, b) => b.itraIndex - a.itraIndex);
+      const topItra = validItra.slice(0, 5);
+      const itraIndex = topItra.length ? Math.round(topItra.reduce((s, r) => s + Number(r.itraIndex), 0) / topItra.length) : 0;
+
+      return {
+        totalRaces,
+        totalDistance,
+        totalElevation,
+        totalStones,
+        utmbSeriesCount,
+        utmbIndex,
+        utmbByCat,
+        itraIndex,
+      };
+    }
+
+    function getPerformanceTier(index) {
+      if (index >= 800) return { label: 'World Elite', th: 'ระดับโลก (Elite)', color: 'text-amber-400' };
+      if (index >= 700) return { label: 'Sub-Elite', th: 'ระดับแนวหน้า (Sub-Elite)', color: 'text-orange-400' };
+      if (index >= 580) return { label: 'Competitive Runner', th: 'ระดับแข่งขัน (Competitive)', color: 'text-emerald-400' };
+      if (index >= 450) return { label: 'Experienced Trail', th: 'นักวิ่งเทรลชำนาญการ', color: 'text-sky-400' };
+      return { label: 'Trail Enthusiast', th: 'นักวิ่งเทรลทั่วไป', color: 'text-slate-300' };
+    }
+
+    function formatThaiDate(dateStr) {
+      if (!dateStr) return '-';
+      const [y, m, d] = dateStr.split('-');
+      return `${parseInt(d, 10)} ${THAI_MONTHS_SHORT[parseInt(m, 10) - 1]} ${y}`;
+    }
+
+    /*************************************************************************
+     * 3. NAVIGATION & TAB SWITCHING
+     *************************************************************************/
+    function switchTab(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+      // Update Desktop Nav
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('text-slate-300', 'hover:text-white', 'hover:bg-slate-800/80');
+      });
+      const activeDesk = document.getElementById(`nav-${tabName}`);
+      if (activeDesk) {
+        activeDesk.classList.add('tab-active');
+        activeDesk.classList.remove('text-slate-300', 'hover:text-white', 'hover:bg-slate-800/80');
+      }
+
+      // Update Mobile Nav
+      document.querySelectorAll('.mnav-btn').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('bg-slate-900/90', 'text-slate-300', 'border', 'border-slate-800');
+      });
+      const activeMob = document.getElementById(`mnav-${tabName}`);
+      if (activeMob) {
+        activeMob.classList.add('tab-active');
+        activeMob.classList.remove('bg-slate-900/90', 'text-slate-300', 'border', 'border-slate-800');
+      }
+
+      // Re-render active tab (ensures charts size properly)
+      if (tabName === 'overview') {
+        renderOverview();
+        renderAnalytics();
+      } else if (tabName === 'rankings') {
+        renderRankings();
+      } else if (tabName === 'goals') {
+        renderGoals();
+      } else if (tabName === 'races') {
+        renderRaceLog();
+      }
+    }
+
+    /*************************************************************************
+     * 4. RENDER TAB 1: OVERVIEW & DAILY/MONTHLY/YEARLY ANALYTICS
+     *************************************************************************/
+    function populateYearSelectors() {
+      const years = getAvailableYears();
+      const selectors = ['kpi-year-select', 'ana-year-select', 'race-filter-year'];
+
+      selectors.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const prev = el.value;
+        el.innerHTML = id === 'race-filter-year' ? '<option value="all">ทุกปี</option>' : '';
+        years.forEach(y => {
+          const opt = document.createElement('option');
+          opt.value = y;
+          opt.textContent = `ปี ${y}`;
+          el.appendChild(opt);
+        });
+        if (prev && Array.from(el.options).some(o => o.value === prev)) {
+          el.value = prev;
+        }
+      });
+    }
+
+    function setKpiFilter(mode) {
+      kpiFilter = mode;
+      document.querySelectorAll('.kpi-filter-btn').forEach(b => {
+        b.classList.remove('bg-orange-500', 'text-white');
+        b.classList.add('text-slate-400');
+      });
+      const active = document.getElementById(`kpi-btn-${mode}`);
+      active.classList.add('bg-orange-500', 'text-white');
+      active.classList.remove('text-slate-400');
+
+      const ySel = document.getElementById('kpi-year-select');
+      const mSel = document.getElementById('kpi-month-select');
+      const dSel = document.getElementById('kpi-day-select');
+      ySel.classList.add('hidden');
+      mSel.classList.add('hidden');
+      dSel.classList.add('hidden');
+
+      if (mode === 'year') {
+        ySel.classList.remove('hidden');
+      } else if (mode === 'month') {
+        mSel.classList.remove('hidden');
+        if (!mSel.value) mSel.value = races.length ? races[0].date.slice(0, 7) : '2026-11';
+      } else if (mode === 'day') {
+        dSel.classList.remove('hidden');
+        if (!dSel.value) dSel.value = races.length ? races[0].date : '2026-11-08';
+      }
+      renderOverview();
+    }
+
+    function renderOverview() {
+      // Filter races based on KPI period filter
+      let filtered = [...races];
+      let subtitle = 'แสดงสถิติสะสมทั้งหมดทุกรายการ';
+
+      if (kpiFilter === 'year') {
+        const y = document.getElementById('kpi-year-select').value;
+        filtered = races.filter(r => r.date.startsWith(y));
+        subtitle = `แสดงสถิติเฉพาะปี ${y}`;
+      } else if (kpiFilter === 'month') {
+        const m = document.getElementById('kpi-month-select').value;
+        filtered = races.filter(r => r.date.startsWith(m));
+        if (m) {
+          const [yr, mo] = m.split('-');
+          subtitle = `แสดงสถิติเดือน ${THAI_MONTHS_FULL[parseInt(mo, 10) - 1]} ${yr}`;
+        }
+      } else if (kpiFilter === 'day') {
+        const d = document.getElementById('kpi-day-select').value;
+        filtered = races.filter(r => r.date === d);
+        subtitle = `แสดงสถิติวันที่ ${formatThaiDate(d)}`;
+      }
+
+      document.getElementById('kpi-period-subtitle').textContent = subtitle;
+
+      const metrics = calculateMetrics(filtered);
+      const allMetrics = calculateMetrics(races); // UTMB Index & Running Stones overall status
+
+      document.getElementById('kpi-total-races').textContent = metrics.totalRaces;
+      document.getElementById('kpi-races-meta').innerHTML = `<i class="fa-solid fa-trophy"></i> <span>UTMB Series: ${metrics.utmbSeriesCount} สนาม</span>`;
+      document.getElementById('kpi-total-distance').textContent = metrics.totalDistance.toLocaleString('en-US', { maximumFractionDigits: 1 });
+      document.getElementById('kpi-total-elevation').textContent = metrics.totalElevation.toLocaleString('en-US');
+
+      document.getElementById('kpi-utmb-index').textContent = metrics.utmbIndex || allMetrics.utmbIndex;
+      const catEl = document.getElementById('kpi-utmb-categories');
+      catEl.innerHTML = ['20K', '50K', '100K', '100M'].map(c => {
+        const val = allMetrics.utmbByCat[c];
+        return `<div class="bg-slate-900/80 border border-slate-800 rounded-md py-1 text-center">
+          <div class="text-slate-400 text-[9px]">${c}</div>
+          <div class="font-bold ${val ? 'text-amber-300' : 'text-slate-600'}">${val || '-'}</div>
+        </div>`;
+      }).join('');
+
+      document.getElementById('kpi-running-stones').textContent = metrics.totalStones;
+      const lotteryEl = document.getElementById('kpi-lottery-status');
+      if (allMetrics.totalStones >= 1 && allMetrics.utmbIndex > 0) {
+        lotteryEl.className = 'text-[11px] text-emerald-300 mt-2 flex items-center gap-1 truncate';
+        lotteryEl.innerHTML = `<i class="fa-solid fa-circle-check"></i> พร้อมจับฉลาก UTMB (${allMetrics.totalStones} สิทธิ์)`;
+      } else {
+        lotteryEl.className = 'text-[11px] text-amber-300 mt-2 flex items-center gap-1 truncate';
+        lotteryEl.innerHTML = `<i class="fa-solid fa-circle-info"></i> ต้องมีอย่างน้อย 1 Stone`;
+      }
+
+      const itraScore = metrics.itraIndex || allMetrics.itraIndex;
+      document.getElementById('kpi-itra-index').textContent = itraScore;
+      const tier = getPerformanceTier(itraScore);
+      document.getElementById('kpi-itra-tier').innerHTML = `<i class="fa-solid fa-medal text-violet-400"></i> <span class="${tier.color}">${tier.th}</span>`;
+
+      // Render Recent Races (top 3 latest)
+      const sorted = [...races].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+      const recentContainer = document.getElementById('recent-races-list');
+      if (sorted.length === 0) {
+        recentContainer.innerHTML = `<p class="text-xs text-slate-400 col-span-3 text-center py-6">ยังไม่มีรายการแข่งขัน กดปุ่ม "+ เพิ่มรายการแข่งขัน" เพื่อเริ่มต้น</p>`;
+      } else {
+        recentContainer.innerHTML = sorted.map(r => `
+          <div class="bg-slate-900/75 border border-slate-800 hover:border-orange-500/40 transition-all rounded-xl p-4 space-y-2.5">
+            <div class="flex items-start justify-between gap-2">
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-bold font-num bg-orange-500/15 text-orange-400 border border-orange-500/30">${r.category}</span>
+              <span class="text-[11px] text-slate-400 font-num">${formatThaiDate(r.date)}</span>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold text-white line-clamp-1">${r.name}</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot text-slate-500 mr-1"></i>${r.location}</p>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs font-num">
+              <span class="text-sky-400 font-semibold">${r.distance} km / D+ ${Number(r.elevation).toLocaleString()}m</span>
+              ${r.stones > 0 ? `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-gem mr-1"></i>+${r.stones}</span>` : `<span class="text-slate-400">Index ${r.utmbIndex || '-'}</span>`}
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function setAnalyticsMode(mode) {
+      analyticsMode = mode;
+      document.querySelectorAll('.ana-mode-btn').forEach(b => {
+        b.classList.remove('bg-sky-500', 'text-slate-950');
+        b.classList.add('text-slate-400');
+      });
+      const btn = document.getElementById(`ana-btn-${mode}`);
+      btn.classList.add('bg-sky-500', 'text-slate-950');
+      btn.classList.remove('text-slate-400');
+
+      const yearSel = document.getElementById('ana-year-select');
+      const monthSel = document.getElementById('ana-month-select');
+      const chartWrap = document.getElementById('analytics-chart-wrapper');
+      const calWrap = document.getElementById('analytics-calendar-wrapper');
+
+      yearSel.classList.add('hidden');
+      monthSel.classList.add('hidden');
+
+      if (mode === 'yearly') {
+        chartWrap.classList.remove('hidden');
+        calWrap.classList.add('hidden');
+      } else if (mode === 'monthly') {
+        yearSel.classList.remove('hidden');
+        chartWrap.classList.remove('hidden');
+        calWrap.classList.add('hidden');
+      } else if (mode === 'daily') {
+        monthSel.classList.remove('hidden');
+        if (!monthSel.value) monthSel.value = calendarMonthStr;
+        chartWrap.classList.add('hidden');
+        calWrap.classList.remove('hidden');
+      }
+      renderAnalytics();
+    }
+
+    function renderAnalytics() {
+      if (analyticsMode === 'daily') {
+        calendarMonthStr = document.getElementById('ana-month-select').value || calendarMonthStr;
+        renderCalendar();
+        return;
+      }
+
+      let labels = [];
+      let distData = [];
+      let countData = [];
+      let elevData = [];
+
+      if (analyticsMode === 'yearly') {
+        document.getElementById('main-chart-title').textContent = 'ระยะทาง (km) และจำนวนสนามสะสมรายปี';
+        document.getElementById('elev-chart-title').textContent = 'ความชันสะสมรายปี (D+ เมตร)';
+
+        const years = getAvailableYears().reverse();
+        labels = years;
+        years.forEach(y => {
+          const yrRaces = races.filter(r => r.date.startsWith(y));
+          countData.push(yrRaces.length);
+          distData.push(Number(yrRaces.reduce((s, r) => s + Number(r.distance), 0).toFixed(1)));
+          elevData.push(yrRaces.reduce((s, r) => s + Number(r.elevation), 0));
+        });
+      } else if (analyticsMode === 'monthly') {
+        const selectedYear = document.getElementById('ana-year-select').value || getAvailableYears()[0];
+        document.getElementById('main-chart-title').textContent = `ระยะทาง (km) และจำนวนสนามรายเดือน ปี ${selectedYear}`;
+        document.getElementById('elev-chart-title').textContent = `ความชันสะสมรายเดือน ปี ${selectedYear} (D+ เมตร)`;
+
+        labels = THAI_MONTHS_SHORT;
+        for (let m = 1; m <= 12; m++) {
+          const prefix = `${selectedYear}-${String(m).padStart(2, '0')}`;
+          const mRaces = races.filter(r => r.date.startsWith(prefix));
+          countData.push(mRaces.length);
+          distData.push(Number(mRaces.reduce((s, r) => s + Number(r.distance), 0).toFixed(1)));
+          elevData.push(mRaces.reduce((s, r) => s + Number(r.elevation), 0));
+        }
+      }
+
+      // Destroy previous charts before recreating
+      if (activityMainChart) activityMainChart.destroy();
+      if (elevationChart) elevationChart.destroy();
+
+      const ctx1 = document.getElementById('activityMainChart').getContext('2d');
+      activityMainChart = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'ระยะทาง (km)',
+              data: distData,
+              backgroundColor: 'rgba(249, 115, 22, 0.78)',
+              borderColor: '#f97316',
+              borderWidth: 1,
+              borderRadius: 6,
+              yAxisID: 'y',
+            },
+            {
+              label: 'จำนวนสนาม',
+              data: countData,
+              type: 'line',
+              borderColor: '#38bdf8',
+              backgroundColor: '#38bdf8',
+              borderWidth: 2.5,
+              tension: 0.35,
+              pointRadius: 4,
+              yAxisID: 'y1',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { labels: { color: '#cbd5e1', font: { family: 'Prompt', size: 11 } } },
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8', font: { family: 'Prompt', size: 11 } }, grid: { color: 'rgba(148,163,184,0.08)' } },
+            y: {
+              position: 'left',
+              ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } },
+              grid: { color: 'rgba(148,163,184,0.08)' },
+              title: { display: true, text: 'km', color: '#f97316', font: { size: 11 } },
+            },
+            y1: {
+              position: 'right',
+              beginAtZero: true,
+              ticks: { stepSize: 1, color: '#38bdf8', font: { family: 'Inter', size: 11 } },
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: 'สนาม', color: '#38bdf8', font: { size: 11 } },
+            },
+          },
+        },
+      });
+
+      const ctx2 = document.getElementById('elevationChart').getContext('2d');
+      elevationChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'ความชัน D+ (m)',
+              data: elevData,
+              backgroundColor: 'rgba(16, 185, 129, 0.72)',
+              borderColor: '#10b981',
+              borderWidth: 1,
+              borderRadius: 6,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8', font: { family: 'Prompt', size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#94a3b8', font: { family: 'Inter', size: 10 } }, grid: { color: 'rgba(148,163,184,0.08)' } },
+          },
+        },
+      });
+    }
+
+    function shiftCalendarMonth(delta) {
+      const [y, m] = calendarMonthStr.split('-').map(Number);
+      const d = new Date(y, m - 1 + delta, 1);
+      calendarMonthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      document.getElementById('ana-month-select').value = calendarMonthStr;
+      renderCalendar();
+    }
+
+    function renderCalendar() {
+      const [year, month] = calendarMonthStr.split('-').map(Number);
+      document.getElementById('calendar-month-label').textContent = `${THAI_MONTHS_FULL[month - 1]} ${year}`;
+
+      const firstDay = new Date(year, month - 1, 1).getDay();
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+
+      // Map races in this month by day
+      const raceByDay = {};
+      races.forEach(r => {
+        if (r.date.startsWith(calendarMonthStr)) {
+          const dayNum = parseInt(r.date.slice(8, 10), 10);
+          if (!raceByDay[dayNum]) raceByDay[dayNum] = [];
+          raceByDay[dayNum].push(r);
+        }
+      });
+
+      // Empty leading slots
+      for (let i = 0; i < firstDay; i++) {
+        grid.innerHTML += `<div class="h-12 sm:h-14 rounded-xl bg-slate-900/30 border border-slate-800/30"></div>`;
+      }
+
+      // Day cells
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayRaces = raceByDay[day] || [];
+        const hasRace = dayRaces.length > 0;
+        const dateIso = `${calendarMonthStr}-${String(day).padStart(2, '0')}`;
+
+        grid.innerHTML += `
+          <div ${hasRace ? `onclick="showCalendarDayDetail('${dateIso}')"` : ''}
+            class="calendar-day ${hasRace ? 'has-race' : 'bg-slate-900/60 border-slate-800/70'} h-12 sm:h-14 rounded-xl border p-1.5 flex flex-col justify-between">
+            <span class="text-xs font-num ${hasRace ? 'text-orange-300 font-bold' : 'text-slate-400'}">${day}</span>
+            ${hasRace ? `<div class="flex items-center justify-between">
+              <span class="text-[9px] sm:text-[10px] font-bold text-white bg-orange-500 px-1.5 py-0.5 rounded truncate">${dayRaces[0].category}</span>
+            </div>` : ''}
+          </div>
+        `;
+      }
+
+      // Auto-select first race day in month if available
+      const firstRaceDay = Object.keys(raceByDay)[0];
+      if (firstRaceDay) {
+        showCalendarDayDetail(`${calendarMonthStr}-${String(firstRaceDay).padStart(2, '0')}`);
+      } else {
+        document.getElementById('calendar-day-detail').innerHTML = `
+          <div class="text-center py-8 text-slate-500">
+            <i class="fa-regular fa-calendar-xmark text-2xl mb-2"></i>
+            <p class="text-xs">ไม่มีรายการแข่งขันในเดือน ${THAI_MONTHS_FULL[month - 1]} ${year}</p>
+          </div>`;
+      }
+    }
+
+    function showCalendarDayDetail(dateIso) {
+      const dayRaces = races.filter(r => r.date === dateIso);
+      const container = document.getElementById('calendar-day-detail');
+      if (dayRaces.length === 0) return;
+
+      container.innerHTML = dayRaces.map(r => `
+        <div class="bg-slate-800/60 border border-orange-500/40 rounded-xl p-4 space-y-3 mb-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-orange-400">${formatThaiDate(r.date)}</span>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-orange-500 text-white">${r.category}</span>
+          </div>
+          <div>
+            <h5 class="text-sm font-bold text-white">${r.name}</h5>
+            <p class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${r.location}</p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs font-num">
+            <div class="bg-slate-900/80 p-2 rounded-lg"><span class="text-slate-400 block text-[10px]">ระยะทาง</span><strong class="text-sky-400">${r.distance} km</strong></div>
+            <div class="bg-slate-900/80 p-2 rounded-lg"><span class="text-slate-400 block text-[10px]">ความชัน D+</span><strong class="text-emerald-400">${Number(r.elevation).toLocaleString()} m</strong></div>
+            <div class="bg-slate-900/80 p-2 rounded-lg"><span class="text-slate-400 block text-[10px]">เวลาที่ทำได้</span><strong class="text-white">${r.time}</strong></div>
+            <div class="bg-slate-900/80 p-2 rounded-lg"><span class="text-slate-400 block text-[10px]">UTMB / Stones</span><strong class="text-amber-400">${r.utmbIndex || '-'} / +${r.stones}</strong></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /*************************************************************************
+     * 5. RENDER TAB 2: GLOBAL RANKINGS
+     *************************************************************************/
+    function renderRankings() {
+      const m = calculateMetrics(races);
+      const tier = getPerformanceTier(m.utmbIndex);
+
+      const globalPct = ((rankingProfile.globalRank / rankingProfile.globalTotal) * 100).toFixed(1);
+      const asiaPct = ((rankingProfile.asiaRank / rankingProfile.asiaTotal) * 100).toFixed(1);
+      const thPct = ((rankingProfile.thRank / rankingProfile.thTotal) * 100).toFixed(1);
+
+      document.getElementById('rank-tier-badge').textContent = tier.label;
+      document.getElementById('rank-percentile-badge').textContent = `Top ${globalPct}% ทั่วโลก`;
+      document.getElementById('rank-agegroup-label').textContent = rankingProfile.ageGroupName;
+
+      document.getElementById('disp-global-rank').textContent = `#${Number(rankingProfile.globalRank).toLocaleString()}`;
+      document.getElementById('disp-global-total').textContent = Number(rankingProfile.globalTotal).toLocaleString();
+      document.getElementById('bar-global-pct').style.width = `${Math.max(5, 100 - Number(globalPct))}%`;
+
+      document.getElementById('disp-asia-rank').textContent = `#${Number(rankingProfile.asiaRank).toLocaleString()}`;
+      document.getElementById('disp-asia-total').textContent = Number(rankingProfile.asiaTotal).toLocaleString();
+      document.getElementById('bar-asia-pct').style.width = `${Math.max(5, 100 - Number(asiaPct))}%`;
+
+      document.getElementById('disp-th-rank').textContent = `#${Number(rankingProfile.thRank).toLocaleString()}`;
+      document.getElementById('disp-th-total').textContent = Number(rankingProfile.thTotal).toLocaleString();
+      document.getElementById('bar-th-pct').style.width = `${Math.max(5, 100 - Number(thPct))}%`;
+
+      document.getElementById('disp-ag-rank').textContent = `#${Number(rankingProfile.ageGroupRank).toLocaleString()}`;
+      document.getElementById('disp-ag-name').textContent = rankingProfile.ageGroupName;
+
+      // Systems breakdown
+      document.getElementById('sys-utmb-score').textContent = m.utmbIndex;
+      document.getElementById('sys-utmb-rank').textContent = `#${Number(rankingProfile.globalRank).toLocaleString()}`;
+
+      let bestCat = '-';
+      let bestVal = 0;
+      Object.entries(m.utmbByCat).forEach(([cat, val]) => {
+        if (val > bestVal) {
+          bestVal = val;
+          bestCat = `${cat} (${val})`;
+        }
+      });
+      document.getElementById('sys-utmb-bestcat').textContent = bestCat;
+
+      document.getElementById('sys-itra-score').textContent = m.itraIndex;
+      document.getElementById('sys-itra-rank').textContent = `#${Number(rankingProfile.itraGlobalRank).toLocaleString()}`;
+      document.getElementById('sys-itra-tier').textContent = getPerformanceTier(m.itraIndex).th;
+
+      document.getElementById('sys-th-rank').textContent = `#${Number(rankingProfile.thRank).toLocaleString()}`;
+      document.getElementById('sys-th-pct').textContent = `Top ${thPct}%`;
+      document.getElementById('sys-th-ag').textContent = `#${rankingProfile.ageGroupRank} (${rankingProfile.ageGroupName})`;
+
+      // Index Progression Line Chart
+      const chronological = [...races]
+        .filter(r => Number(r.utmbIndex) > 0 || Number(r.itraIndex) > 0)
+        .sort((a, b) => a.date.localeCompare(b.date));
+
+      if (indexProgressionChart) indexProgressionChart.destroy();
+      const ctx = document.getElementById('indexProgressionChart').getContext('2d');
+      indexProgressionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chronological.map(r => `${formatThaiDate(r.date)} (${r.category})`),
+          datasets: [
+            {
+              label: 'UTMB Index',
+              data: chronological.map(r => r.utmbIndex || null),
+              borderColor: '#fbbf24',
+              backgroundColor: 'rgba(251, 191, 36, 0.15)',
+              fill: true,
+              tension: 0.35,
+              borderWidth: 2.5,
+              pointRadius: 4,
+              pointBackgroundColor: '#fbbf24',
+            },
+            {
+              label: 'ITRA Index',
+              data: chronological.map(r => r.itraIndex || null),
+              borderColor: '#a78bfa',
+              backgroundColor: 'rgba(167, 139, 250, 0.1)',
+              fill: false,
+              tension: 0.35,
+              borderWidth: 2.5,
+              borderDash: [5, 5],
+              pointRadius: 4,
+              pointBackgroundColor: '#a78bfa',
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                afterTitle: (items) => {
+                  const idx = items[0].dataIndex;
+                  return chronological[idx] ? chronological[idx].name : '';
+                },
+              },
+            },
+          },
+          scales: {
+            x: { ticks: { color: '#94a3b8', font: { family: 'Prompt', size: 10 } }, grid: { color: 'rgba(148,163,184,0.06)' } },
+            y: { ticks: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }, grid: { color: 'rgba(148,163,184,0.08)' } },
+          },
+        },
+      });
+    }
+
+    /*************************************************************************
+     * 6. RENDER TAB 3: INDEX & RUNNING STONES GOALS
+     *************************************************************************/
+    function renderGoals() {
+      const m = calculateMetrics(races);
+
+      // Running Stones Goal
+      const stonesPct = Math.min(100, Math.round((m.totalStones / goals.stonesTarget) * 100));
+      document.getElementById('goal-stones-ratio').textContent = `${m.totalStones} / ${goals.stonesTarget} Stones`;
+      document.getElementById('goal-stones-bar').style.width = `${stonesPct}%`;
+
+      const visualGrid = document.getElementById('stones-visual-grid');
+      const totalIcons = Math.max(goals.stonesTarget, m.totalStones);
+      visualGrid.innerHTML = Array.from({ length: Math.min(totalIcons, 30) }).map((_, i) => {
+        const earned = i < m.totalStones;
+        return `<span class="w-6 h-6 rounded-lg flex items-center justify-center text-xs ${earned ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-slate-900 text-slate-600 border border-slate-800'}" title="${earned ? 'ได้รับแล้ว' : 'เป้าหมาย'}">
+          <i class="fa-solid fa-gem"></i>
+        </span>`;
+      }).join('');
+
+      // UTMB Index Goal
+      const utmbPct = Math.min(100, Math.round((m.utmbIndex / goals.utmbTarget) * 100));
+      document.getElementById('goal-utmb-ratio').textContent = `${m.utmbIndex} / ${goals.utmbTarget}`;
+      document.getElementById('goal-utmb-bar').style.width = `${utmbPct}%`;
+      document.getElementById('goal-utmb-current').textContent = m.utmbIndex;
+      const utmbDiff = Math.max(0, goals.utmbTarget - m.utmbIndex);
+      document.getElementById('goal-utmb-diff').textContent = utmbDiff === 0 ? 'บรรลุเป้าหมาย!' : `+${utmbDiff} pts`;
+
+      // ITRA Index Goal
+      const itraPct = Math.min(100, Math.round((m.itraIndex / goals.itraTarget) * 100));
+      document.getElementById('goal-itra-ratio').textContent = `${m.itraIndex} / ${goals.itraTarget}`;
+      document.getElementById('goal-itra-bar').style.width = `${itraPct}%`;
+      document.getElementById('goal-itra-current').textContent = m.itraIndex;
+      const itraDiff = Math.max(0, goals.itraTarget - m.itraIndex);
+      document.getElementById('goal-itra-diff').textContent = itraDiff === 0 ? 'บรรลุเป้าหมาย!' : `+${itraDiff} pts`;
+
+      // Qualification Checklist (Valid UTMB Index within 24 months + >=1 Stone)
+      const now = new Date('2026-11-22');
+      const twoYearsAgo = new Date(now);
+      twoYearsAgo.setMonth(twoYearsAgo.getMonth() - 24);
+
+      const recentValidCats = new Set(
+        races
+          .filter(r => Number(r.utmbIndex) > 0 && new Date(r.date) >= twoYearsAgo)
+          .map(r => r.category)
+      );
+
+      const finals = [
+        {
+          code: 'OCC (50K)',
+          desc: 'Orsières–Champex–Chamonix (57 km / D+ 3,500m)',
+          validIndex: recentValidCats.has('20K') || recentValidCats.has('50K') || recentValidCats.has('100K') || recentValidCats.has('100M'),
+          reqText: 'ต้องมี Valid UTMB Index ระยะ 20K, 50K, 100K หรือ 100M',
+        },
+        {
+          code: 'CCC (100K)',
+          desc: 'Courmayeur–Champex–Chamonix (101 km / D+ 6,050m)',
+          validIndex: recentValidCats.has('50K') || recentValidCats.has('100K') || recentValidCats.has('100M'),
+          reqText: 'ต้องมี Valid UTMB Index ระยะ 50K, 100K หรือ 100M',
+        },
+        {
+          code: 'UTMB (100M)',
+          desc: 'Ultra-Trail du Mont-Blanc (176 km / D+ 9,900m)',
+          validIndex: recentValidCats.has('100K') || recentValidCats.has('100M'),
+          reqText: 'ต้องมี Valid UTMB Index ระยะ 100K หรือ 100M',
+        },
+      ];
+
+      const hasStones = m.totalStones >= 1;
+      document.getElementById('qualification-checklist').innerHTML = finals.map(f => {
+        const ready = f.validIndex && hasStones;
+        return `
+          <div class="bg-slate-900/80 border ${ready ? 'border-emerald-500/40' : 'border-slate-800'} rounded-2xl p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-extrabold text-white font-num">${f.code}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${ready ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}">
+                ${ready ? 'พร้อมจับฉลาก' : 'ยังไม่ครบเงื่อนไข'}
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-400">${f.desc}</p>
+            <div class="space-y-1.5 pt-2 border-t border-slate-800 text-xs">
+              <div class="flex items-center gap-2 ${f.validIndex ? 'text-emerald-400' : 'text-slate-500'}">
+                <i class="fa-solid ${f.validIndex ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+                <span>Valid UTMB Index (24 เดือนล่าสุด)</span>
+              </div>
+              <div class="flex items-center gap-2 ${hasStones ? 'text-emerald-400' : 'text-slate-500'}">
+                <i class="fa-solid ${hasStones ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+                <span>Running Stones: <strong class="font-num">${m.totalStones}</strong> ก้อน (ขั้นต่ำ 1)</span>
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-500">${f.reqText}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /*************************************************************************
+     * 7. RENDER TAB 4: RACE LOG & CRUD OPERATIONS
+     *************************************************************************/
+    function renderRaceLog() {
+      const search = (document.getElementById('race-search').value || '').toLowerCase().trim();
+      const yearFilter = document.getElementById('race-filter-year').value;
+      const catFilter = document.getElementById('race-filter-cat').value;
+
+      const filtered = races
+        .filter(r => {
+          const matchSearch = !search || r.name.toLowerCase().includes(search) || r.location.toLowerCase().includes(search) || r.type.toLowerCase().includes(search);
+          const matchYear = yearFilter === 'all' || r.date.startsWith(yearFilter);
+          const matchCat = catFilter === 'all' || r.category === catFilter;
+          return matchSearch && matchYear && matchCat;
+        })
+        .sort((a, b) => b.date.localeCompare(a.date));
+
+      const tbody = document.getElementById('race-log-tbody');
+      const emptyEl = document.getElementById('race-log-empty');
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+      tbody.innerHTML = filtered.map(r => {
+        const badgeStyle =
+          r.type === 'UTMB Major'
+            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+            : r.type === 'UTMB World Series'
+            ? 'bg-orange-500/20 text-orange-300 border-orange-500/40'
+            : r.type === 'ITRA'
+            ? 'bg-violet-500/20 text-violet-300 border-violet-500/40'
+            : 'bg-slate-700/50 text-slate-300 border-slate-600/50';
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition-colors">
+            <td class="py-3.5 px-4">
+              <div class="font-semibold text-white">${r.name}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5 flex flex-wrap items-center gap-2">
+                <span class="font-num"><i class="fa-regular fa-calendar mr-1 text-orange-400"></i>${formatThaiDate(r.date)}</span>
+                <span><i class="fa-solid fa-location-dot mr-1 text-slate-500"></i>${r.location}</span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium border ${badgeStyle}">${r.type}</span>
+              <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold font-num bg-slate-800 text-sky-400">${r.category}</span>
+            </td>
+            <td class="py-3.5 px-4 text-right font-num">
+              <div class="font-bold text-white">${r.distance} km</div>
+              <div class="text-[11px] text-emerald-400">D+ ${Number(r.elevation).toLocaleString()} m</div>
+            </td>
+            <td class="py-3.5 px-4 text-center font-num">
+              <div class="font-semibold text-slate-200">${r.time}</div>
+              <div class="text-[11px] text-slate-400">Rank: ${r.rank || '-'}</div>
+            </td>
+            <td class="py-3.5 px-4 text-center font-num">
+              <span class="text-amber-400 font-bold">${r.utmbIndex || '-'}</span>
+              <span class="text-slate-600 mx-1">/</span>
+              <span class="text-violet-400 font-semibold">${r.itraIndex || '-'}</span>
+            </td>
+            <td class="py-3.5 px-4 text-center font-num">
+              ${r.stones > 0
+                ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-bold text-xs"><i class="fa-solid fa-gem text-[10px]"></i>+${r.stones}</span>`
+                : `<span class="text-slate-600">-</span>`}
+            </td>
+            <td class="py-3.5 px-4 text-right whitespace-nowrap">
+              <button onclick="openRaceModal('${r.id}')" class="p-2 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-slate-800 transition-colors" title="แก้ไข">
+                <i class="fa-solid fa-pen"></i>
+              </button>
+              <button onclick="askDeleteRace('${r.id}')" class="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors" title="ลบ">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /*************************************************************************
+     * 8. MODALS, FORMS & TOAST HELPERS
+     *************************************************************************/
+    function openModal(id) {
+      const m = document.getElementById(id);
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').textContent = msg;
+      toast.classList.remove('hidden');
+      toast.classList.add('flex');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 2800);
+    }
+
+    function autoSuggestStones() {
+      const type = document.getElementById('f-type').value;
+      const cat = document.getElementById('f-category').value;
+      const baseMap = { '20K': 1, '50K': 2, '100K': 3, '100M': 4 };
+      let stones = 0;
+      if (type === 'UTMB World Series') stones = baseMap[cat] || 0;
+      if (type === 'UTMB Major') stones = (baseMap[cat] || 0) * 2;
+      document.getElementById('f-stones').value = stones;
+    }
+
+    function openRaceModal(raceId = null) {
+      const form = document.getElementById('race-form');
+      form.reset();
+      document.getElementById('race-id').value = raceId || '';
+
+      if (raceId) {
+        const r = races.find(item => item.id === raceId);
+        if (!r) return;
+        document.getElementById('race-modal-title').innerHTML = `<i class="fa-solid fa-pen text-sky-400"></i> แก้ไขรายการแข่งขัน`;
+        document.getElementById('f-name').value = r.name;
+        document.getElementById('f-date').value = r.date;
+        document.getElementById('f-location').value = r.location;
+        document.getElementById('f-category').value = r.category;
+        document.getElementById('f-type').value = r.type;
+        document.getElementById('f-distance').value = r.distance;
+        document.getElementById('f-elevation').value = r.elevation;
+        document.getElementById('f-time').value = r.time;
+        document.getElementById('f-rank').value = r.rank || '';
+        document.getElementById('f-utmb').value = r.utmbIndex || '';
+        document.getElementById('f-itra').value = r.itraIndex || '';
+        document.getElementById('f-stones').value = r.stones || 0;
+      } else {
+        document.getElementById('race-modal-title').innerHTML = `<i class="fa-solid fa-plus-circle text-orange-400"></i> เพิ่มรายการแข่งขันวิ่งเทรล`;
+        document.getElementById('f-date').value = new Date().toISOString().slice(0, 10);
+        autoSuggestStones();
+      }
+      openModal('race-modal');
+    }
+
+    function saveRace(event) {
+      event.preventDefault();
+      const id = document.getElementById('race-id').value;
+      const raceObj = {
+        id: id || `race-${Date.now()}`,
+        name: document.getElementById('f-name').value.trim(),
+        date: document.getElementById('f-date').value,
+        location: document.getElementById('f-location').value.trim(),
+        category: document.getElementById('f-category').value,
+        type: document.getElementById('f-type').value,
+        distance: parseFloat(document.getElementById('f-distance').value) || 0,
+        elevation: parseInt(document.getElementById('f-elevation').value, 10) || 0,
+        time: document.getElementById('f-time').value.trim(),
+        rank: document.getElementById('f-rank').value.trim(),
+        utmbIndex: parseInt(document.getElementById('f-utmb').value, 10) || 0,
+        itraIndex: parseInt(document.getElementById('f-itra').value, 10) || 0,
+        stones: parseInt(document.getElementById('f-stones').value, 10) || 0,
+      };
+
+      if (id) {
+        const idx = races.findIndex(r => r.id === id);
+        if (idx !== -1) races[idx] = raceObj;
+        showToast('อัปเดตรายการแข่งขันเรียบร้อยแล้ว');
+      } else {
+        races.push(raceObj);
+        showToast('เพิ่มรายการแข่งขันใหม่เรียบร้อยแล้ว');
+      }
+
+      persistState();
+      closeModal('race-modal');
+      refreshAll();
+    }
+
+    function openConfirm(title, message, onConfirm) {
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-message').textContent = message;
+      const okBtn = document.getElementById('confirm-ok-btn');
+      okBtn.onclick = () => {
+        closeModal('confirm-modal');
+        onConfirm();
+      };
+      openModal('confirm-modal');
+    }
+
+    function askDeleteRace(raceId) {
+      const r = races.find(item => item.id === raceId);
+      if (!r) return;
+      openConfirm('ลบรายการแข่งขัน', `คุณต้องการลบรายการ "${r.name}" ออกจากประวัติใช่หรือไม่?`, () => {
+        races = races.filter(item => item.id !== raceId);
+        persistState();
+        refreshAll();
+        showToast('ลบรายการแข่งขันเรียบร้อยแล้ว');
+      });
+    }
+
+    function askResetSampleData() {
+      openConfirm('รีเซ็ตข้อมูลตัวอย่าง', 'ข้อมูลการแข่งขันทั้งหมดจะถูกแทนที่ด้วยข้อมูลตัวอย่างเริ่มต้น (2024-2026) ยืนยันหรือไม่?', () => {
+        races = JSON.parse(JSON.stringify(SAMPLE_RACES));
+        rankingProfile = { ...DEFAULT_RANKING };
+        goals = { ...DEFAULT_GOALS };
+        persistState();
+        refreshAll();
+        showToast('รีเซ็ตข้อมูลตัวอย่างเรียบร้อยแล้ว');
+      });
+    }
+
+    function openRankingModal() {
+      document.getElementById('r-global').value = rankingProfile.globalRank;
+      document.getElementById('r-global-total').value = rankingProfile.globalTotal;
+      document.getElementById('r-asia').value = rankingProfile.asiaRank;
+      document.getElementById('r-itra-global').value = rankingProfile.itraGlobalRank;
+      document.getElementById('r-th').value = rankingProfile.thRank;
+      document.getElementById('r-ag').value = rankingProfile.ageGroupRank;
+      document.getElementById('r-ag-name').value = rankingProfile.ageGroupName;
+      openModal('ranking-modal');
+    }
+
+    function saveRankingProfile(event) {
+      event.preventDefault();
+      rankingProfile.globalRank = parseInt(document.getElementById('r-global').value, 10) || 1;
+      rankingProfile.globalTotal = parseInt(document.getElementById('r-global-total').value, 10) || 100000;
+      rankingProfile.asiaRank = parseInt(document.getElementById('r-asia').value, 10) || 1;
+      rankingProfile.itraGlobalRank = parseInt(document.getElementById('r-itra-global').value, 10) || 1;
+      rankingProfile.thRank = parseInt(document.getElementById('r-th').value, 10) || 1;
+      rankingProfile.ageGroupRank = parseInt(document.getElementById('r-ag').value, 10) || 1;
+      rankingProfile.ageGroupName = document.getElementById('r-ag-name').value.trim() || 'Open';
+
+      persistState();
+      closeModal('ranking-modal');
+      renderRankings();
+      showToast('อัปเดตข้อมูลอันดับโลกเรียบร้อยแล้ว');
+    }
+
+    function openGoalsModal() {
+      document.getElementById('g-stones').value = goals.stonesTarget;
+      document.getElementById('g-utmb').value = goals.utmbTarget;
+      document.getElementById('g-itra').value = goals.itraTarget;
+      openModal('goals-modal');
+    }
+
+    function saveGoals(event) {
+      event.preventDefault();
+      goals.stonesTarget = parseInt(document.getElementById('g-stones').value, 10) || 12;
+      goals.utmbTarget = parseInt(document.getElementById('g-utmb').value, 10) || 600;
+      goals.itraTarget = parseInt(document.getElementById('g-itra').value, 10) || 600;
+
+      persistState();
+      closeModal('goals-modal');
+      renderGoals();
+      showToast('บันทึกเป้าหมายส่วนตัวเรียบร้อยแล้ว');
+    }
+
+    function refreshAll() {
+      populateYearSelectors();
+      renderOverview();
+      renderAnalytics();
+      renderRankings();
+      renderGoals();
+      renderRaceLog();
+    }
+
+    // Initialize Application on Load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadState();
+      refreshAll();
+    });
+  </script>
+</body>
+</html>
